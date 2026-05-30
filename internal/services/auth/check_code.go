@@ -2,12 +2,14 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
-	"net/http"
-	"strings"
+
 	"test-auth/internal/models"
 )
 

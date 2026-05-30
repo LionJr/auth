@@ -6,14 +6,16 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
+	"net/smtp"
+	"time"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/redis/go-redis/v9"
 	gomail "gopkg.in/mail.v2"
-	"io"
-	"net/smtp"
+
 	"test-auth/internal/config"
 	"test-auth/pkg/token_manager"
-	"time"
 )
 
 var (
@@ -58,8 +60,7 @@ func (s *Smtp) SendCode(ctx context.Context, receiver, userId string) error {
 		return err
 	}
 
-	err = sendMessage(s.cfg.Username, s.cfg.Password, s.cfg.Host, receiver, "Your one time password", code, s.cfg.Port)
-	if err != nil {
+	if err = sendMessage(s.cfg.Username, s.cfg.Password, s.cfg.Host, receiver, "Your one time password", code, s.cfg.Port); err != nil {
 		return err
 	}
 

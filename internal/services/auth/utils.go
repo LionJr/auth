@@ -2,8 +2,10 @@ package auth
 
 import (
 	"crypto/sha512"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+
 	"test-auth/internal/models"
 )
 

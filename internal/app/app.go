@@ -2,43 +2,133 @@ package app
 
 import (
 	"context"
+	"flag"
+	"fmt"
+	"time"
+
 	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+
 	"test-auth/internal/app/http/server"
 	"test-auth/internal/config"
+	"test-auth/internal/repositories/postgres"
+	redisrepo "test-auth/internal/repositories/redis"
 	"test-auth/internal/services/auth"
+	"test-auth/internal/smtp"
 	"test-auth/pkg/token_manager"
 )
 
+const (
+	name            = "test-auth"
+	configsPath     = "configs"
+	shutdownTimeout = 15 * time.Second
+)
+
 type Application struct {
-	Config         *config.AppConfig
-	Logger         *zap.Logger
-	PostgresClient *sqlx.DB
-	RedisClient    *redis.Client
-	AuthService    *auth.Service
-	TokenManager   *token_manager.TokenManager
+	cfg            *config.AppConfig
+	logger         *zap.Logger
+	postgresClient *sqlx.DB
+	redisClient    *goredis.Client
+	authService    *auth.Service
+	tokenManager   *token_manager.TokenManager
+	http           *server.Server
 }
 
-func (app *Application) Run(ctx context.Context) {
-	httpServerErrCh := server.NewServer(
-		ctx,
-		app.Config,
-		app.Logger,
-		app.AuthService,
-		app.TokenManager,
+func New(ctx context.Context) (*Application, error) {
+	var version, environment, logLevel string
+	flag.StringVar(&version, "v", "", "version")
+	flag.StringVar(&environment, "e", "local", "environment")
+	flag.StringVar(&logLevel, "ll", "info", "logging level")
+	flag.Parse()
+
+	cfg, err := config.NewAppConfig(fmt.Sprintf("%s/%s.yml", configsPath, environment))
+	if err != nil {
+		return nil, fmt.Errorf("load config: %w", err)
+	}
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return nil, fmt.Errorf("init logger: %w", err)
+	}
+
+	logger.Info(
+		"flags",
+		zap.String("name", name),
+		zap.String("version", version),
+		zap.String("environment", environment),
+		zap.String("log_level", logLevel),
 	)
 
-	<-httpServerErrCh
+	pgClient, err := postgres.NewPostgresDB(cfg.Postgres)
+	if err != nil {
+		return nil, fmt.Errorf("connect postgres: %w", err)
+	}
+
+	redisClient, err := redisrepo.NewRedisClient(ctx, cfg.Redis)
+	if err != nil {
+		return nil, fmt.Errorf("connect redis: %w", err)
+	}
+
+	tokenManager, err := token_manager.NewManager(cfg.Token.AccessSecretKey, cfg.Token.RefreshSecretKey)
+	if err != nil {
+		return nil, fmt.Errorf("init token manager: %w", err)
+	}
+
+	smtpClient := smtp.NewSmtp(cfg.SMTP, redisClient, tokenManager)
+	authService := auth.NewService(
+		cfg,
+		logger,
+		postgres.NewAuthRepository(pgClient),
+		redisClient,
+		tokenManager,
+		smtpClient,
+	)
+
+	return &Application{
+		cfg:            cfg,
+		logger:         logger,
+		postgresClient: pgClient,
+		redisClient:    redisClient,
+		authService:    authService,
+		tokenManager:   tokenManager,
+		http:           server.New(cfg, logger, authService, tokenManager),
+	}, nil
 }
 
-func (app *Application) Shutdown(ctx context.Context) {
-	app.Logger.Info("Shutdown database")
-	_ = app.PostgresClient.Close()
+func (a *Application) Run(ctx context.Context) error {
+	a.logger.Info("application started")
+	return a.http.Run(ctx)
+}
 
-	app.Logger.Info("Shutdown redis")
-	_ = app.RedisClient.Shutdown(ctx)
+func (a *Application) Shutdown() {
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
 
-	app.Logger.Info("Shutdown logger")
-	_ = app.Logger.Sync()
+	if a.http != nil {
+		if err := a.http.Shutdown(shutdownCtx); err != nil {
+			a.logger.Error("http shutdown failed", zap.Error(err))
+		}
+	}
+
+	if a.postgresClient != nil {
+		a.logger.Info("closing postgres connection")
+		if err := a.postgresClient.Close(); err != nil {
+			a.logger.Error("postgres close failed", zap.Error(err))
+		}
+	}
+
+	if a.redisClient != nil {
+		a.logger.Info("closing redis connection")
+		if err := a.redisClient.Close(); err != nil {
+			a.logger.Error("redis close failed", zap.Error(err))
+		}
+	}
+
+	if a.logger != nil {
+		a.logger.Info("application stopped")
+		if err := a.logger.Sync(); err != nil {
+			a.logger.Error("logger sync failed", zap.Error(err))
+		}
+	}
 }

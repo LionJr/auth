@@ -1,16 +1,18 @@
 package token_manager
 
-import "github.com/dgrijalva/jwt-go/v4"
+import (
+	"github.com/golang-jwt/jwt/v5"
+)
 
 type AccessClaims struct {
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 
 	UserID string `json:"user_id"`
 	IP     string `json:"ip"`
 }
 
 type RefreshClaims struct {
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 
 	IP string `json:"ip"`
 }

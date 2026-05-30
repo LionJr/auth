@@ -2,11 +2,11 @@ package postgres
 
 import (
 	"fmt"
-	"test-auth/internal/config"
 
-	_ "github.com/jackc/pgx/v4/stdlib" // pgx driver
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
+
+	"test-auth/internal/config"
 )
 
 func NewPostgresDB(cfg config.Postgres) (*sqlx.DB, error) {
@@ -20,11 +20,11 @@ func NewPostgresDB(cfg config.Postgres) (*sqlx.DB, error) {
 
 	db, err := sqlx.Connect("pgx", dataSourceName)
 	if err != nil {
-		return nil, errors.Wrap(err, "sqlx.Connect")
+		return nil, fmt.Errorf("sqlx.Connect: %w", err)
 	}
 
 	if err = db.Ping(); err != nil {
-		return nil, errors.Wrap(err, "db.Ping")
+		return nil, fmt.Errorf("db.Ping: %w", err)
 	}
 
 	return db, nil

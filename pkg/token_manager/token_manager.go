@@ -3,17 +3,14 @@ package token_manager
 import (
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go/v4"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type TokenManager struct {
 	accessSigningKey  string
 	refreshSigningKey string
-}
-
-type Time struct {
-	time.Time
 }
 
 func NewManager(accessSigningKey, refreshSigningKey string) (*TokenManager, error) {
@@ -29,9 +26,9 @@ func NewManager(accessSigningKey, refreshSigningKey string) (*TokenManager, erro
 
 func (m *TokenManager) NewAccessToken(userId, jti, ip string, ttl time.Duration) (string, error) {
 	accessClaims := &AccessClaims{
-		StandardClaims: jwt.StandardClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
-			ExpiresAt: (*jwt.Time)(&Time{time.Now().Add(ttl)}),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 		},
 		UserID: userId,
 		IP:     ip,
@@ -44,7 +41,7 @@ func (m *TokenManager) NewAccessToken(userId, jti, ip string, ttl time.Duration)
 
 func (m *TokenManager) ParseAccessToken(accessToken string) (*AccessClaims, error) {
 	accessClaims := &AccessClaims{}
-	token, err := jwt.ParseWithClaims(accessToken, accessClaims, func(token *jwt.Token) (i interface{}, err error) {
+	token, err := jwt.ParseWithClaims(accessToken, accessClaims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -54,19 +51,19 @@ func (m *TokenManager) ParseAccessToken(accessToken string) (*AccessClaims, erro
 		return nil, err
 	}
 
-	accessClaims, ok := token.Claims.(*AccessClaims)
+	claims, ok := token.Claims.(*AccessClaims)
 	if !ok {
 		return nil, fmt.Errorf("error get user claims from access token")
 	}
 
-	return accessClaims, nil
+	return claims, nil
 }
 
 func (m *TokenManager) NewRefreshToken(jti, ip string, ttl time.Duration) (string, error) {
 	refreshClaims := &RefreshClaims{
-		StandardClaims: jwt.StandardClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
-			ExpiresAt: (*jwt.Time)(&Time{time.Now().Add(ttl)}),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 		},
 		IP: ip,
 	}
@@ -78,7 +75,7 @@ func (m *TokenManager) NewRefreshToken(jti, ip string, ttl time.Duration) (strin
 
 func (m *TokenManager) ParseRefreshToken(refreshToken string) (*RefreshClaims, error) {
 	refreshClaims := &RefreshClaims{}
-	token, err := jwt.ParseWithClaims(refreshToken, refreshClaims, func(token *jwt.Token) (i interface{}, err error) {
+	token, err := jwt.ParseWithClaims(refreshToken, refreshClaims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -88,10 +85,10 @@ func (m *TokenManager) ParseRefreshToken(refreshToken string) (*RefreshClaims, e
 		return nil, err
 	}
 
-	refreshClaims, ok := token.Claims.(*RefreshClaims)
+	claims, ok := token.Claims.(*RefreshClaims)
 	if !ok {
 		return nil, fmt.Errorf("error get user claims from refresh token")
 	}
 
-	return refreshClaims, nil
+	return claims, nil
 }

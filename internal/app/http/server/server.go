@@ -2,14 +2,17 @@ package server
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	errch "github.com/proxeter/errors-channel"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
-	"net/http"
-	"strconv"
+
 	"test-auth/internal/config"
 	"test-auth/internal/services/auth"
 	"test-auth/pkg/token_manager"
@@ -18,56 +21,71 @@ import (
 )
 
 type Server struct {
-	Logger       *zap.Logger
-	Config       *config.AppConfig
-	AuthService  *auth.Service
+	cfg          *config.AppConfig
+	logger       *zap.Logger
+	authService  *auth.Service
 	tokenManager *token_manager.TokenManager
+	srv          *http.Server
 }
 
-func NewServer(
-	ctx context.Context,
-	config *config.AppConfig,
+func New(
+	cfg *config.AppConfig,
 	logger *zap.Logger,
 	authService *auth.Service,
 	tokenManager *token_manager.TokenManager,
-) <-chan error {
-	return errch.Register(func() error {
-		return (&Server{
-			Logger:       logger,
-			Config:       config,
-			AuthService:  authService,
-			tokenManager: tokenManager,
-		}).Start(ctx)
-	})
+) *Server {
+	return &Server{
+		cfg:          cfg,
+		logger:       logger,
+		authService:  authService,
+		tokenManager: tokenManager,
+		srv: &http.Server{
+			Handler:      initHandlers(authService),
+			Addr:         ":" + strconv.Itoa(cfg.HTTP.Port),
+			ReadTimeout:  cfg.HTTP.ReadTimeout,
+			WriteTimeout: cfg.HTTP.WriteTimeout,
+		},
+	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
-	h := s.initHandlers()
+func (s *Server) Run(ctx context.Context) error {
+	errCh := make(chan error, 1)
 
-	server := http.Server{
-		Handler:      h,
-		Addr:         ":" + strconv.Itoa(s.Config.HTTP.Port),
-		ReadTimeout:  s.Config.HTTP.ReadTimeout,
-		WriteTimeout: s.Config.HTTP.WriteTimeout,
-	}
+	go func() {
+		s.logger.Info(
+			"http server listening",
+			zap.String("domain", s.cfg.HTTP.Domain),
+			zap.Int("port", s.cfg.HTTP.Port),
+		)
 
-	s.Logger.Info(
-		"Server running",
-		zap.String("domain", s.Config.HTTP.Domain),
-		zap.Int("port", s.Config.HTTP.Port),
-	)
+		if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
 
 	select {
-	case err := <-errch.Register(server.ListenAndServe):
-		s.Logger.Info("Shutdown server", zap.String("by", "error"), zap.Error(err))
-		return server.Shutdown(ctx)
 	case <-ctx.Done():
-		s.Logger.Info("Shutdown server", zap.String("by", "context.Done"))
-		return server.Shutdown(ctx)
+		s.logger.Info("shutdown signal received")
+		return nil
+	case err := <-errCh:
+		if err != nil {
+			return fmt.Errorf("http server: %w", err)
+		}
+		return nil
 	}
 }
 
-func (s *Server) initHandlers() *gin.Engine {
+func (s *Server) Shutdown(ctx context.Context) error {
+	if err := s.srv.Shutdown(ctx); err != nil {
+		return fmt.Errorf("http shutdown: %w", err)
+	}
+	s.logger.Info("http server stopped")
+	return nil
+}
+
+func initHandlers(authService *auth.Service) *gin.Engine {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
@@ -87,9 +105,9 @@ func (s *Server) initHandlers() *gin.Engine {
 
 	api := router.Group("/api")
 	authRouter := api.Group("/auth")
-	authRouter.POST("/sign-in", s.AuthService.SignInHandler)
-	authRouter.POST("/check-code", s.AuthService.CheckCodeHandler)
-	authRouter.POST("/refresh", s.AuthService.RefreshHandler)
+	authRouter.POST("/sign-in", authService.SignInHandler)
+	authRouter.POST("/check-code", authService.CheckCodeHandler)
+	authRouter.POST("/refresh", authService.RefreshHandler)
 
 	return router
 }
