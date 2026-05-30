@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"test-auth/internal/models"
+	"github.com/LionJr/auth/internal/models"
 )
 
 // RefreshHandler         godoc

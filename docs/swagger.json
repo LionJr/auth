@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "description": "API server for Auth API",
-        "title": "Test task Back-Dev Auth API",
+        "title": "Auth API",
         "contact": {},
         "version": "1.0"
     },

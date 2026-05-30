@@ -1,4 +1,4 @@
-module test-auth
+module github.com/LionJr/auth
 
 go 1.25.10
 

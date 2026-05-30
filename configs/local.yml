@@ -8,7 +8,7 @@ postgres:
   host: 192.168.77.110
   port: 7432
   username: postgres
-  dbname: test-auth
+  dbname: auth
   password: Password12345
 
 redis:

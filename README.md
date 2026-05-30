@@ -1,4 +1,4 @@
-# Test Auth
+# Auth
 
 REST API для аутентификации пользователей по email.
 
@@ -29,7 +29,7 @@ Swagger UI: `http://localhost:8080/swagger/index.html`
 1. Применить миграцию к базе данных:
 
 ```bash
-psql -h <host> -U postgres -d test-auth -f schema/000001_init.up.sql
+psql -h <host> -U postgres -d auth -f schema/000001_init.up.sql
 ```
 
 2. Настроить параметры подключения в `configs/local.yml` (PostgreSQL, Redis, SMTP, ключи JWT).

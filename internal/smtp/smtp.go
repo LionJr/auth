@@ -14,8 +14,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	gomail "gopkg.in/mail.v2"
 
-	"test-auth/internal/config"
-	"test-auth/pkg/token_manager"
+	"github.com/LionJr/auth/internal/config"
+	"github.com/LionJr/auth/pkg/token_manager"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 
-	"test-auth/internal/config"
+	"github.com/LionJr/auth/internal/config"
 )
 
 func NewPostgresDB(cfg config.Postgres) (*sqlx.DB, error) {

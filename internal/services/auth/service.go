@@ -1,11 +1,11 @@
 package auth
 
 import (
+	"github.com/LionJr/auth/internal/config"
+	"github.com/LionJr/auth/internal/smtp"
+	"github.com/LionJr/auth/pkg/token_manager"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
-	"test-auth/internal/config"
-	"test-auth/internal/smtp"
-	"test-auth/pkg/token_manager"
 )
 
 type Service struct {

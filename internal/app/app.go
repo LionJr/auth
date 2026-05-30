@@ -10,17 +10,17 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	"test-auth/internal/app/http/server"
-	"test-auth/internal/config"
-	"test-auth/internal/repositories/postgres"
-	redisrepo "test-auth/internal/repositories/redis"
-	"test-auth/internal/services/auth"
-	"test-auth/internal/smtp"
-	"test-auth/pkg/token_manager"
+	"github.com/LionJr/auth/internal/app/http/server"
+	"github.com/LionJr/auth/internal/config"
+	"github.com/LionJr/auth/internal/repositories/postgres"
+	redisrepo "github.com/LionJr/auth/internal/repositories/redis"
+	"github.com/LionJr/auth/internal/services/auth"
+	"github.com/LionJr/auth/internal/smtp"
+	"github.com/LionJr/auth/pkg/token_manager"
 )
 
 const (
-	name            = "test-auth"
+	name            = "auth"
 	configsPath     = "configs"
 	shutdownTimeout = 15 * time.Second
 )

@@ -13,11 +13,11 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 
-	"test-auth/internal/config"
-	"test-auth/internal/services/auth"
-	"test-auth/pkg/token_manager"
+	"github.com/LionJr/auth/internal/config"
+	"github.com/LionJr/auth/internal/services/auth"
+	"github.com/LionJr/auth/pkg/token_manager"
 
-	_ "test-auth/docs"
+	_ "github.com/LionJr/auth/docs"
 )
 
 type Server struct {

@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"test-auth/internal/models"
+	"github.com/LionJr/auth/internal/models"
 )
 
 // SignInHandler           godoc

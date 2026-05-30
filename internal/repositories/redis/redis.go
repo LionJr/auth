@@ -5,7 +5,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"test-auth/internal/config"
+	"github.com/LionJr/auth/internal/config"
 )
 
 func NewRedisClient(ctx context.Context, cfg config.Redis) (*redis.Client, error) {

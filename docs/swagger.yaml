@@ -51,7 +51,7 @@ host: 192.168.77.110:8080
 info:
   contact: {}
   description: API server for Auth API
-  title: Test task Back-Dev Auth API
+  title: Auth API
   version: "1.0"
 paths:
   /auth/check-code:

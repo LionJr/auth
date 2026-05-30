@@ -6,10 +6,10 @@ import (
 
 	"github.com/chapsuk/grace"
 
-	"test-auth/internal/app"
+	"github.com/LionJr/auth/internal/app"
 )
 
-// @title           Test task Back-Dev Auth API
+// @title           Auth API
 // @version         1.0
 // @description     API server for Auth API
 

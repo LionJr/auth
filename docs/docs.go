@@ -265,7 +265,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "192.168.77.110:8080",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Test task Back-Dev Auth API",
+	Title:            "Auth API",
 	Description:      "API server for Auth API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

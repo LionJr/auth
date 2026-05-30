@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
-	"test-auth/internal/models"
+	"github.com/LionJr/auth/internal/models"
 )
 
 func sendErrorResponse(ctx *gin.Context, msg string, status int) {
